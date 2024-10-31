@@ -10,11 +10,10 @@ fn main() {
 
     println!("Mining with difficulty: {}", difficulty);
 
-    let genesis_block_hex = "0x00000000ffff0000000000000000000000000000000000000000000000000000";
-    let genesis_block =
-        BigUint::from_str_radix(&genesis_block_hex[2..], 16).expect("Invalid hex string");
+    let pow_limit_hex = "0x00000000ffffffffffffffffffffffffffffffffffffffffffffffffffffffff";
+    let pow_limit = BigUint::from_str_radix(&pow_limit_hex[2..], 16).expect("Invalid hex string");
 
-    let target = &genesis_block / &difficulty;
+    let target = &pow_limit / &difficulty;
     let target_full_hash = format!("{:064x}", target);
     println!("Target full hash: {}", target_full_hash);
 
@@ -30,11 +29,6 @@ fn main() {
         let hex = format!("{:x}", result);
 
         let hex_num = BigUint::from_str_radix(&hex, 16).expect("Invalid hex string");
-
-        print!(
-            "msg: {}, nonce: {}, hash: {}, hex_num: {}\r",
-            msg, nonce, hex, hex_num
-        );
 
         if hex_num < target {
             let duration = now.elapsed();
