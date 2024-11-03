@@ -47,18 +47,19 @@ async fn main() {
 
         let handle = task::spawn(async move {
             let mut hasher = Sha256::new();
+            hasher.update(&prefix);
+
             let mut current_nonce = start_nonce;
             while current_nonce < end_nonce {
-                if current_nonce % 1_000_000 == 0 && found.load(Ordering::Relaxed) {
+                if found.load(Ordering::Acquire) {
                     break;
                 }
 
-                hasher.update(&prefix);
                 hasher.update(&current_nonce.to_be_bytes());
                 let result = hasher.finalize_reset();
 
                 if result.as_slice() < target_bytes.as_slice() {
-                    found.store(true, Ordering::Relaxed);
+                    found.store(true, Ordering::Release);
                     let duration = now.elapsed();
                     println!("\nFound valid hash!");
                     println!("msg: Hello World! {}", current_nonce);
@@ -68,7 +69,7 @@ async fn main() {
                     break;
                 }
 
-                if current_nonce % 10_000_000 == 0 {
+                if current_nonce % 100_000_000 == 0 {
                     println!("Trying nonce: {}, hash: {:x}", current_nonce, result);
                 }
 
