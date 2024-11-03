@@ -1,5 +1,5 @@
 [package]
-name = "mining"
+name = "mining-btc"
 version = "0.1.0"
 edition = "2021"
 

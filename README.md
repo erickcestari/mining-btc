@@ -27,13 +27,13 @@ To know how many threads your machine support, do
 ## Build
 
 ```bash
-cargo build
+cargo build --release
 ```
 
 ## Run
 
 ```bash
-./target/debug/grind-rust-simulator
+./target/release/mining-btc
 ```
 
 ## WARNING
