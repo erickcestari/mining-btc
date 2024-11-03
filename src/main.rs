@@ -15,7 +15,7 @@ async fn main() {
 
     println!("Mining with difficulty: {}", difficulty);
 
-    let genesis_block_hex = "0x0000000ffff00000000000000000000000000000000000000000000000000000";
+    let genesis_block_hex = "0x00000000ffff0000000000000000000000000000000000000000000000000000";
     let genesis_block =
         BigUint::from_str_radix(&genesis_block_hex[2..], 16).expect("Invalid hex string");
 
