@@ -1,43 +1,86 @@
-use std::time::Instant;
-
 use num_bigint::BigUint;
 use num_traits::Num;
 use sha2::{Digest, Sha256};
+use std::sync::{
+    atomic::{AtomicBool, Ordering},
+    Arc, Mutex,
+};
+use std::time::Instant;
+use tokio::task;
 
-fn main() {
-    let difficulty_hex = "0x1";
+#[tokio::main]
+async fn main() {
+    let difficulty_hex = "0x000000001";
     let difficulty = BigUint::from_str_radix(&difficulty_hex[2..], 16).expect("Invalid hex string");
 
     println!("Mining with difficulty: {}", difficulty);
 
-    let pow_limit_hex = "0x00000000ffffffffffffffffffffffffffffffffffffffffffffffffffffffff";
-    let pow_limit = BigUint::from_str_radix(&pow_limit_hex[2..], 16).expect("Invalid hex string");
+    let genesis_block_hex = "0x00000000ffff0000000000000000000000000000000000000000000000000000";
+    let genesis_block =
+        BigUint::from_str_radix(&genesis_block_hex[2..], 16).expect("Invalid hex string");
 
-    let target = &pow_limit / &difficulty;
-    let target_full_hash = format!("{:064x}", target);
-    println!("Target full hash: {}", target_full_hash);
+    let target = genesis_block / &difficulty;
+    let mut target_bytes = target.to_bytes_be();
+
+    while target_bytes.len() < 32 {
+        target_bytes.insert(0, 0);
+    }
+
+    println!("Target full hash: {:064x}", target);
 
     let now = Instant::now();
-    let mut nonce = 0;
+    let nonce = Arc::new(Mutex::new(0u64));
+    let target_bytes = Arc::new(target_bytes);
+    let prefix = b"Hello World! ".to_vec();
+    let found = Arc::new(AtomicBool::new(false));
 
-    loop {
-        let msg = format!("Hello World! {}", nonce);
+    let mut handles = vec![];
 
-        let mut hasher = Sha256::new();
-        hasher.update(msg.as_bytes());
-        let result = hasher.finalize();
-        let hex = format!("{:x}", result);
+    for _ in 0..16 {
+        let nonce = Arc::clone(&nonce);
+        let target_bytes = Arc::clone(&target_bytes);
+        let prefix = prefix.clone();
+        let found = Arc::clone(&found);
 
-        let hex_num = BigUint::from_str_radix(&hex, 16).expect("Invalid hex string");
+        let handle = task::spawn(async move {
+            let mut hasher = Sha256::new();
+            loop {
+                if found.load(Ordering::Relaxed) {
+                    break;
+                }
 
-        if hex_num < target {
-            let duration = now.elapsed();
-            println!("msg: {}", msg);
-            println!("nonce: {}", nonce);
-            println!("hash: {}", hex);
-            println!("time: {:.2?}", duration);
-            break;
-        }
-        nonce += 1;
+                let current_nonce = {
+                    let mut nonce_guard = nonce.lock().unwrap();
+                    let n = *nonce_guard;
+                    *nonce_guard += 1;
+                    n
+                };
+
+                hasher.update(&prefix);
+                hasher.update(&current_nonce.to_be_bytes());
+                let result = hasher.finalize_reset();
+
+                if result.as_slice() < target_bytes.as_slice() {
+                    found.store(true, Ordering::Relaxed);
+                    let duration = now.elapsed();
+                    println!("\nFound valid hash!");
+                    println!("msg: Hello World! {}", current_nonce);
+                    println!("nonce: {}", current_nonce);
+                    println!("hash: {:x}", result);
+                    println!("time: {:.2?}", duration);
+                    break;
+                }
+
+                if current_nonce % 1_000_000 == 0 {
+                    println!("Trying nonce: {}, hash: {:x}", current_nonce, result);
+                }
+            }
+        });
+
+        handles.push(handle);
+    }
+
+    for handle in handles {
+        handle.await.expect("Task failed");
     }
 }
