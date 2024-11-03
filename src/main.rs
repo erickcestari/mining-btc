@@ -47,8 +47,9 @@ async fn main() {
 
         let handle = task::spawn(async move {
             let mut hasher = Sha256::new();
-            for current_nonce in start_nonce..end_nonce {
-                if found.load(Ordering::Relaxed) {
+            let mut current_nonce = start_nonce;
+            while current_nonce < end_nonce {
+                if current_nonce % 1_000_000 == 0 && found.load(Ordering::Relaxed) {
                     break;
                 }
 
@@ -67,9 +68,11 @@ async fn main() {
                     break;
                 }
 
-                if current_nonce % 1_000_000 == 0 {
+                if current_nonce % 10_000_000 == 0 {
                     println!("Trying nonce: {}, hash: {:x}", current_nonce, result);
                 }
+
+                current_nonce += 1;
             }
         });
 
