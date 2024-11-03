@@ -12,7 +12,7 @@ It performs a proof-of-work's simulation of genesis block given:
 ## Install
 
 ```bash
-git clone https://github.com/qlrd/grind-rust-simulator
+git clone https://github.com/erickcestari/mining-btc
 ```
 
 ## Change variable `num_threads`
