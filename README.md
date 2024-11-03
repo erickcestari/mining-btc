@@ -1,4 +1,4 @@
-# grind-rust-simulator
+# mining-btc
 
 This script is for educational-only purposes and is not intended for production.
 
