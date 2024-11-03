@@ -3,7 +3,7 @@ use num_traits::Num;
 use sha2::{Digest, Sha256};
 use std::sync::{
     atomic::{AtomicBool, Ordering},
-    Arc, Mutex,
+    Arc,
 };
 use std::time::Instant;
 use tokio::task;
@@ -15,7 +15,7 @@ async fn main() {
 
     println!("Mining with difficulty: {}", difficulty);
 
-    let genesis_block_hex = "0x00000000ffff0000000000000000000000000000000000000000000000000000";
+    let genesis_block_hex = "0x0000000ffff00000000000000000000000000000000000000000000000000000";
     let genesis_block =
         BigUint::from_str_radix(&genesis_block_hex[2..], 16).expect("Invalid hex string");
 
@@ -29,32 +29,28 @@ async fn main() {
     println!("Target full hash: {:064x}", target);
 
     let now = Instant::now();
-    let nonce = Arc::new(Mutex::new(0u64));
-    let target_bytes = Arc::new(target_bytes);
     let prefix = b"Hello World! ".to_vec();
     let found = Arc::new(AtomicBool::new(false));
+    let target_bytes = Arc::new(target_bytes);
 
     let mut handles = vec![];
 
-    for _ in 0..16 {
-        let nonce = Arc::clone(&nonce);
+    let num_threads = 16;
+    let nonces_per_thread = u64::MAX / num_threads;
+
+    for i in 0..num_threads {
+        let start_nonce = i * nonces_per_thread;
+        let end_nonce = start_nonce + nonces_per_thread;
         let target_bytes = Arc::clone(&target_bytes);
         let prefix = prefix.clone();
         let found = Arc::clone(&found);
 
         let handle = task::spawn(async move {
             let mut hasher = Sha256::new();
-            loop {
+            for current_nonce in start_nonce..end_nonce {
                 if found.load(Ordering::Relaxed) {
                     break;
                 }
-
-                let current_nonce = {
-                    let mut nonce_guard = nonce.lock().unwrap();
-                    let n = *nonce_guard;
-                    *nonce_guard += 1;
-                    n
-                };
 
                 hasher.update(&prefix);
                 hasher.update(&current_nonce.to_be_bytes());
