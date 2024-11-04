@@ -8,17 +8,24 @@ use std::sync::{
 use std::time::Instant;
 use tokio::task;
 
+extern crate num_cpus;
+
 #[tokio::main]
 async fn main() {
+    // Setup difficulty in hexadecimal format
     let difficulty_hex = "0x000000001";
+
+    // Now convert the string to a bit integer
     let difficulty = BigUint::from_str_radix(&difficulty_hex[2..], 16).expect("Invalid hex string");
 
     println!("Mining with difficulty: {}", difficulty);
 
+    // Below is the genesis difficulty
     let genesis_block_hex = "0x00000000ffff0000000000000000000000000000000000000000000000000000";
     let genesis_block =
         BigUint::from_str_radix(&genesis_block_hex[2..], 16).expect("Invalid hex string");
 
+    // Target will be a reason between the block hash (genesis) and difficulty
     let target = genesis_block / &difficulty;
     let mut target_bytes = target.to_bytes_be();
 
@@ -35,8 +42,11 @@ async fn main() {
 
     let mut handles = vec![];
 
-    let num_threads = 16;
-    let nonces_per_thread = u64::MAX / num_threads;
+    // Auto get the number of maximum possible threads
+    let num_threads = num_cpus::get();
+    println!("Num threads: {}", num_threads);
+    
+    let nonces_per_thread = usize::MAX / num_threads;
 
     for i in 0..num_threads {
         let start_nonce = i * nonces_per_thread;
