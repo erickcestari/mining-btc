@@ -1,23 +1,37 @@
+use libc::{cpu_set_t, sched_setaffinity, CPU_SET, CPU_ZERO};
 use num_bigint::BigUint;
 use num_traits::Num;
 use sha2::{Digest, Sha256};
-use std::sync::{
-    atomic::{AtomicBool, Ordering},
-    Arc,
-};
 use std::time::Instant;
-use tokio::task;
 
-#[tokio::main]
-async fn main() {
+fn set_thread_affinity(core_id: usize) -> Result<(), String> {
+    unsafe {
+        // Create a CPU set and zero it
+        let mut cpu_set: cpu_set_t = std::mem::zeroed();
+        CPU_ZERO(&mut cpu_set);
+
+        // Add the specified core to the CPU set
+        CPU_SET(core_id, &mut cpu_set);
+
+        // Set the affinity of the current thread
+        let result = sched_setaffinity(0, std::mem::size_of::<cpu_set_t>(), &cpu_set);
+        if result != 0 {
+            return Err(format!("Failed to set CPU affinity for core {}", core_id));
+        }
+    }
+    Ok(())
+}
+
+fn main() {
     let difficulty_hex = "0x000000001";
     let difficulty = BigUint::from_str_radix(&difficulty_hex[2..], 16).expect("Invalid hex string");
 
     println!("Mining with difficulty: {}", difficulty);
 
-    let genesis_block_hex = "0x00000000ffff0000000000000000000000000000000000000000000000000000";
+    const GENESIS_BLOCK_HEX: &str =
+        "0x00000000ffff0000000000000000000000000000000000000000000000000000";
     let genesis_block =
-        BigUint::from_str_radix(&genesis_block_hex[2..], 16).expect("Invalid hex string");
+        BigUint::from_str_radix(&GENESIS_BLOCK_HEX[2..], 16).expect("Invalid hex string");
 
     let target = genesis_block / &difficulty;
     let mut target_bytes = target.to_bytes_be();
@@ -30,36 +44,31 @@ async fn main() {
 
     let now = Instant::now();
     let prefix = b"Hello World! ".to_vec();
-    let found = Arc::new(AtomicBool::new(false));
-    let target_bytes = Arc::new(target_bytes);
 
     let mut handles = vec![];
 
-    let num_threads = 16;
-    let nonces_per_thread = u64::MAX / num_threads;
+    let num_threads = num_cpus::get();
+    let nonces_per_thread = usize::MAX / num_threads;
 
     for i in 0..num_threads {
         let start_nonce = i * nonces_per_thread;
         let end_nonce = start_nonce + nonces_per_thread;
-        let target_bytes = Arc::clone(&target_bytes);
         let prefix = prefix.clone();
-        let found = Arc::clone(&found);
+        let temp_target_bytes = target_bytes.clone();
 
-        let handle = task::spawn(async move {
+        let handle = std::thread::spawn(move || {
+            // Set thread affinity to the specific core
+            set_thread_affinity(i as usize).expect("Failed to set thread affinity");
+
             let mut hasher = Sha256::new();
             hasher.update(&prefix);
 
-            let mut current_nonce = start_nonce;
-            while current_nonce < end_nonce {
-                if found.load(Ordering::Acquire) {
-                    break;
-                }
-
+            let target_bytes = temp_target_bytes.as_slice();
+            for current_nonce in start_nonce..end_nonce {
                 hasher.update(&current_nonce.to_be_bytes());
                 let result = hasher.finalize_reset();
 
-                if result.as_slice() < target_bytes.as_slice() {
-                    found.store(true, Ordering::Release);
+                if result.as_slice() < target_bytes {
                     let duration = now.elapsed();
                     println!("\nFound valid hash!");
                     println!("msg: Hello World! {}", current_nonce);
@@ -72,8 +81,6 @@ async fn main() {
                 if current_nonce % 100_000_000 == 0 {
                     println!("Trying nonce: {}, hash: {:x}", current_nonce, result);
                 }
-
-                current_nonce += 1;
             }
         });
 
@@ -81,6 +88,6 @@ async fn main() {
     }
 
     for handle in handles {
-        handle.await.expect("Task failed");
+        handle.join().expect("Task failed");
     }
 }
