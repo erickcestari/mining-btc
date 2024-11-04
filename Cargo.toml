@@ -3,6 +3,11 @@ name = "mining-btc"
 version = "0.1.0"
 edition = "2021"
 
+[profile.release]
+opt-level = 3
+lto = true
+panic = "abort"
+
 [dependencies]
 num-bigint = "0.4.6"
 num-traits = "0.2.19"
