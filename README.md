@@ -42,3 +42,9 @@ This script will increase **a lot** your CPU usage (depending on system).
 
 For best performance, close all unused programs.
 
+
+## Benchmark
+
+| OS         | Processor   | Number of threads | CPU usage | found hash in (s) | nonce                | hash                     | 
+| ---------- | ----------- | ----------------- | --------- | ----------------- | -------------------- | ------------------------ |
+| Arch Linux | 12th gen i5 | 16                | `80-90%`  | `2.80s`           | 3458764513870408011  | `000000009257b...7dcdb6` | 
