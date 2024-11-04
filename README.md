@@ -15,15 +15,6 @@ It performs a proof-of-work's simulation of genesis block given:
 git clone https://github.com/erickcestari/mining-btc
 ```
 
-## Change variable `num_threads`
-
-At line 38, change the variable `num_threads`.
-
-To know how many threads your machine support, do
-
-- Linux: `awk '/^processor/ {++n} END {print n+1}' /proc/cpuinfo`
-- MacOS: `sysctl -n hw.ncp`
-
 ## Build
 
 ```bash
@@ -49,3 +40,4 @@ For best performance, close all unused programs.
 | ---------- | ----------- | ----------------- | --------- | ----------------- | -------------------- | ------------------------ |
 | Arch Linux | 12th gen i5 | 16                | `80-90%`  | `2.80s`           | 3458764513870408011  | `000000009257b...7dcdb6` |
 | MacOS      | M2 (arm64)  | 8                 | `90-95%`  | `3186.61s`        | 4611686018698950180  | `00000000862e5...80821c` |
+| Arch Linux | i7-2600     | 8                 | `95-99%`  | `255.76s`         | 4611686018698950180  | `00000000862e5...80821c` |
