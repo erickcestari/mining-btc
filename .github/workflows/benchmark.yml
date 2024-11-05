@@ -38,7 +38,7 @@ jobs:
         run: cargo build --release
 
       - name: Run benchmark (unix)
-        if: ${{ matrix.os != "windows-latest" }}
+        if: ${{ matrix.os != 'windows-latest' }}
         run: |
           echo "Running benchmark for mining code..."
           start_time=$(date +%s%N)  # Get start time in nanoseconds
@@ -48,7 +48,7 @@ jobs:
           echo "Elapsed time: $((elapsed_time / 1000000)) ms"  # Convert to milliseconds
       
       - name: Run benchmark (windows)
-        if: ${{ matrix.os == "windows-latest" }}
+        if: ${{ matrix.os == 'windows-latest' }}
         shell: pwsh
         run: |
           Write-Output "Running benchmark for mining code..."
