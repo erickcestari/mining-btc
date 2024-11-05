@@ -9,6 +9,7 @@ lto = true
 panic = "abort"
 
 [dependencies]
+hex = "0.4.3"
 num-bigint = "0.4.6"
 num-traits = "0.2.19"
 num_cpus = "1.16.0"
