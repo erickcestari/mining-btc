@@ -33,7 +33,6 @@ This script will increase **a lot** your CPU usage (depending on system).
 
 For best performance, close all unused programs.
 
-
 ## Benchmark
 
 | OS         | Processor   | Number of threads | CPU usage | found hash in (s) | nonce                | hash                     | 
