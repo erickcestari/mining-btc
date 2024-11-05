@@ -1,0 +1,31 @@
+name: Benchmark Mining Code
+
+on:
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  benchmark:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Set up Rust
+        uses: actions/setup-rust@v1
+        with:
+          rust-version: stable
+
+      - name: Build the project
+        run: cargo build --release
+
+      - name: Run benchmark
+        run: |
+          echo "Running benchmark for mining code..."
+          start_time=$(date +%s%N)  # Get start time in nanoseconds
+          ./target/release/mining-btc
+          end_time=$(date +%s%N)  # Get end time in nanoseconds
+          elapsed_time=$((end_time - start_time))  # Calculate elapsed time
+          echo "Elapsed time: $((elapsed_time / 1000000)) ms"  # Convert to milliseconds
