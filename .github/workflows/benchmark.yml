@@ -7,7 +7,23 @@ on:
 
 jobs:
   benchmark:
-    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            arch: x64
+            
+          - os: windows-latest
+            arch: x64
+            
+          - os: macos-13
+            arch: x64
+            
+          - os: macos-14
+            arch: arm64
+     
+    runs-on: ${{ matrix.os }}
 
     steps:
       - name: Checkout code
@@ -21,7 +37,8 @@ jobs:
       - name: Build the project
         run: cargo build --release
 
-      - name: Run benchmark
+      - name: Run benchmark (unix)
+        if: ${{ matrix.os != 'windows-latest' }}
         run: |
           echo "Running benchmark for mining code..."
           start_time=$(date +%s%N)  # Get start time in nanoseconds
@@ -29,3 +46,14 @@ jobs:
           end_time=$(date +%s%N)  # Get end time in nanoseconds
           elapsed_time=$((end_time - start_time))  # Calculate elapsed time
           echo "Elapsed time: $((elapsed_time / 1000000)) ms"  # Convert to milliseconds
+      
+      - name: Run benchmark (windows)
+        if: ${{ matrix.os == 'windows-latest' }}
+        shell: pwsh
+        run: |
+          Write-Output "Running benchmark for mining code..."
+          $startTime = [DateTime]::UtcNow.Ticks
+          ./target/release/mining-btc
+          $endTime = [DateTime]::UtcNow.Ticks
+          $elapsedTime = ($endTime - $startTime) / 10000  
+          Write-Output "Elapsed time: $elapsedTime ms"
